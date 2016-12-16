@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/textview01"
+        android:text="textview01" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:id="@+id/textview02"
+        android:text="" />
+    <ListView
+        android:layout_width="wrap_content"
+        android:layout_height="331dp"
+        android:id="@+id/listview"
+        android:layout_alignParentLeft="true"
+
+        android:layout_weight="0.59" />
+
+    <Button
+        android:id="@+id/DBbutton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentStart="true"
+        android:text="DataBaseへ記録" />
+
+
+</LinearLayout>

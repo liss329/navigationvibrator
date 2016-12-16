@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ナビゲーションスタート"
+        android:id="@+id/button" />
+
+
+    <RadioGroup android:id="@+id/radiogroup"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content">
+        <RadioButton android:id="@+id/radiobutton_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測定点2" />
+        <RadioButton android:id="@+id/radiobutton_3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測定点3" />
+        <RadioButton android:id="@+id/radiobutton_4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="328教員室前" />
+        <RadioButton android:id="@+id/radiobutton_5"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測定点5" />
+        <RadioButton android:id="@+id/radiobutton_6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="祖k定点5" />
+        <RadioButton android:id="@+id/radiobutton_7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測定点6" />
+        <RadioButton android:id="@+id/radiobutton_8"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="測定点6" />
+    </RadioGroup>
+
+</LinearLayout>
