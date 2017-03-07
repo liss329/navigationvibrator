@@ -5,11 +5,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -17,47 +14,30 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.support.annotation.NonNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.wearable.DataApi;
-import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.MessageApi;
 import com.google.android.gms.wearable.Node;
 import com.google.android.gms.wearable.NodeApi;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -77,14 +57,13 @@ import java.util.TimerTask;
 /**
  * Created by Terasaka on 2016/10/05.
  */
-public class Compass extends Activity implements SensorEventListener {
+public class Compass extends Activity{
     private GoogleApiClient client;
 
     ArrayList<String>[][] point; //ここにデータを仮格納  [測定点数][0->ssid, 1->level];
-    private SensorManager sensorManager;
-    List listMag;
-    List listAcc;
-    List listGyr;
+    private SensorManager sensorManager = null;
+    private SensorEventListener sensorEventListener = null;
+
     int rssiVal; // 測定点数
     Timer timer = new Timer();
     Handler handle = new Handler();
@@ -116,32 +95,16 @@ public class Compass extends Activity implements SensorEventListener {
 
     private Context context;
 
-    TextView textview04;
-    TextView textview05;
-    TextView textview06;
-    TextView textview07;
-    TextView textview08;
-    TextView textview09;
-    TextView textview10;
-    TextView textview11;
-    TextView textview12;
-    TextView textview13;
-    TextView textview16;
-    TextView textview17;
-    TextView textview18;
-    TextView textview19;
-    TextView textview20;
-    TextView textview21;
-
 
     //センサー描画
-
+    private float[] fAccell = null;
+    private float[] fMagnetic = null;
+    private float[] fgyroscope = null;
 
     LineChart mChart;
     LineChart gyrChart;
 
-    private int count_timer_cos_similarity = 1;
-    private int count_timer_likelihood = 1;
+
     private int count_timer_wknn = 1;
 
 
@@ -161,33 +124,41 @@ public class Compass extends Activity implements SensorEventListener {
     int info = 0;
 
 
-    double w_2[] = {0, 0, 0, 0, 0};
-    double w_3[] = {0, 0, 0, 0, 0};
-    double w_dis[] = {0, 0, 0, 0, 0};
-    double w_dis2[] = {0, 0, 0, 0, 0};
+    double w_2[] = {0, 0, 0, 0, 0, 0};
+    double w_3[] = {0, 0, 0, 0, 0, 0};
+    double w_dis[] = {0, 0, 0, 0, 0, 0};
+    double w_dis2[] = {0, 0, 0, 0, 0, 0};
     int k_0 = 1;
-    int k_1, k_2, k_3, k_4 = 0;
-    int r;
+    int k_1, k_2, k_3, k_4, k_5 = 0;
+    static int r = 0;
 
 
     //地図表示
-    int left = 1380;
-    int top = 80;
+    int left = 990;
+    int top = 140;
     int right = 0;
     int bottom = 0;
     ImageView img;
     FrameLayout.MarginLayoutParams mlp;
     Bitmap bitmap2;
 
+    int stx = 0;
     int sty = 0;
 
-    private Sensor mg;
+
+    TextView t2;
+    TextView t3;
+    TextView t4;
+    TextView t5;
+    TextView t6;
+    TextView t7;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.map);
+        setContentView(R.layout.compass_activity);
 
+        /*
         //地図表示初期化
         img = (ImageView) findViewById(R.id.googlemap2);
 
@@ -203,7 +174,7 @@ public class Compass extends Activity implements SensorEventListener {
         //マージンを設定
         img.setLayoutParams(mlp);
         img.setImageBitmap(bitmap2);
-
+*/
 
         //リスナー
         this.client = new GoogleApiClient.Builder(this)
@@ -211,61 +182,205 @@ public class Compass extends Activity implements SensorEventListener {
                 .build();
         this.client.connect();
 
-        // textview01 = (TextView) findViewById(R.id.textView1);
-       /*
-        textview17 = (TextView) findViewById(R.id.textView17);
-        textview18 = (TextView) findViewById(R.id.textView18);
-        textview19 = (TextView) findViewById(R.id.textView19);
-        textview20 = (TextView) findViewById(R.id.textView20);
-        textview21 = (TextView) findViewById(R.id.textView21);
-
-        textview04 = (TextView) findViewById(R.id.textView4);
-        textview05 = (TextView) findViewById(R.id.textView5);
-        textview06 = (TextView) findViewById(R.id.textView6);
-        textview07 = (TextView) findViewById(R.id.textView7);
-        textview08 = (TextView) findViewById(R.id.textView8);
-        textview09 = (TextView) findViewById(R.id.textView9);
-        textview10 = (TextView) findViewById(R.id.textView10);
-        textview11 = (TextView) findViewById(R.id.textView11);
-        textview12 = (TextView) findViewById(R.id.textView12);
-        textview13 = (TextView) findViewById(R.id.textView13);
-        textview16 = (TextView) findViewById(R.id.textView16);
-*/
+        t2 = (TextView) findViewById(R.id.textView2);
+        t3 = (TextView) findViewById(R.id.textView3);
+        t4 = (TextView) findViewById(R.id.textView4);
+        t5 = (TextView) findViewById(R.id.textView5);
+        t6 = (TextView) findViewById(R.id.textView6);
+        t7 = (TextView) findViewById(R.id.textView7);
 
 
 // (1)各種センサーの用意
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        listMag = sensorManager.getSensorList(Sensor.TYPE_MAGNETIC_FIELD);
-        listAcc = sensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-        listGyr = sensorManager.getSensorList(Sensor.TYPE_GYROSCOPE);
+
+        sensorEventListener = new SensorEventListener(){
+
+            public void onSensorChanged (SensorEvent event) {
+                //センサーの値が変化すると呼ばれる
+                float dx;
+                float dy;
+                float dz;
+                float oldx = 0f;
+                float oldy = 0f;
+                float oldz = 0f;
+                int x = 0;
+
+                // センサの取得値をそれぞれ保存しておく
+                switch (event.sensor.getType()) {
+                    case Sensor.TYPE_ACCELEROMETER:
+                        fAccell = event.values.clone();
+                        break;
+                    case Sensor.TYPE_MAGNETIC_FIELD:
+                        fMagnetic = event.values.clone();
+                        break;
+                    case Sensor.TYPE_GYROSCOPE:
+                        fgyroscope = event.values.clone();
+                        break;
+                }
 
 
-        //KITKAT以上かつTYPE_STEP_COUNTERが有効ならtrue
-        boolean isTarget = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
-                && getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_STEP_COUNTER);
+                // fAccell と fMagnetic から傾きと方位角を計算する
+                if (fAccell != null && fMagnetic != null) {
+                    // 回転行列を得る
+                    float[] inR = new float[9];
+                    SensorManager.getRotationMatrix(
+                            inR,
+                            null,
+                            fAccell,
+                            fMagnetic);
+                    // ワールド座標とデバイス座標のマッピングを変換する
+                    float[] outR = new float[9];
+                    SensorManager.remapCoordinateSystem(
+                            inR,
+                            SensorManager.AXIS_X, SensorManager.AXIS_Y,
+                            outR);
+                    // 姿勢を得る
+                    float[] fAttitude = new float[3];
+                    SensorManager.getOrientation(
+                            outR,
+                            fAttitude);
 
-        if (isTarget) {
-            //TYPE_STEP_COUNTERが有効な場合の処理
-            Log.d("hasStepCounter", "STEP-COUNTER is available!!!");
-            sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-            mg = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
+                    String buf =
+                            "---------- Orientation --------\n" +
+                                    String.format("方位角\n\t%f\n", rad2deg(fAttitude[0])) +
+                                    String.format("前後の傾斜\n\t%f\n", rad2deg(fAttitude[1])) +
+                                    String.format("左右の傾斜\n\t%f\n", rad2deg(fAttitude[2]));
+                    TextView t1 = (TextView) findViewById(R.id.textView1);
+                    t1.setText(buf);
+                }
 
-            setStepCounterListener();
-        }
+                    if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+                        //Log.d("mag", "Sucess");
 
+
+                    // 増加量
+                    dx = event.values[0] - oldx;
+                    dy = event.values[1] - oldy;
+                    dz = event.values[2] - oldz;
+                    // ベクトル量をピタゴラスの定義から求める。
+                    // が正確な値は必要でなく、消費電力       から平方根まで求める必要はない
+                    // vectorSize = Math.sqrt((double)(dx*dx+dy*dy+dz*dz));
+                    vectorSize = dx * dx + dy * dy + dz * dz;
+                    // ベクトル計算を厳密に行うと計算量が上がるため、簡易的な方向を求める。
+                    // 一定量のベクトル量があり向きの反転があった場合（多分走った場合）
+                    // vecchangecountはSENSOR_DELAY_NORMALの場合、200ms精度より
+                    // 加速度変化が検出できないための専用処理。精度を上げると不要
+                    // さらに精度がわるいことから、連続のベクトル変化は検知しない。
+                    long dt = new Date().getTime() - changeTime;
+                    boolean dxx = Math.abs(dx) > thresholdMin && vecx != (dx >= 0);
+                    boolean dxy = Math.abs(dy) > thresholdMin && vecy != (dy >= 0);
+                    boolean dxz = Math.abs(dz) > thresholdMin && vecz != (dz >= 0);
+                    if (vectorSize > threshold && dt > thresholdTime
+                            && (dxx || dxy || dxz)) {
+                        vecchangecount++;
+                        changeTime = new Date().getTime();
+
+                    }
+                    // ベクトル量がある状態で向きが２回（上下運動とみなす）変わった場合
+                    // または、ベクトル量が一定値を下回った（静止とみなす）場合、カウント許可
+                    if (vecchangecount > 1 || vectorSize < 1) {
+                        counted = false;
+                        vecchangecount = 0;
+                    }
+                    // カウント許可で、閾値を超えるベクトル量がある場合、カウント
+                    if (!counted && vectorSize > threshold) {
+                        /*if(rad2deg(fAttitude[0]) > -180 && rad2deg(fAttitude[0])<= -135){
+                            //right
+                            stx = stx - 50;
+                            img.setTranslationX(stx);
+                        }else if(rad2deg(fAttitude[0]) > -90 && rad2deg(fAttitude[0])<= -20){
+                            //back
+                            sty = sty - 50;
+                            img.setTranslationY(sty);
+                        }else if(rad2deg(fAttitude[0]) > -20 && rad2deg(fAttitude[0])<= 0){
+                            //left
+                            stx = stx + 50;
+                            img.setTranslationX(stx);
+                        }else if(rad2deg(fAttitude[0]) > 0 && rad2deg(fAttitude[0])<= 45){
+                            //left
+                            stx = stx + 50;
+                            img.setTranslationX(stx);
+                        }else if(rad2deg(fAttitude[0]) > 45 && rad2deg(fAttitude[0])<= 135){
+                            //straight
+                            sty = sty + 50;
+                            img.setTranslationY(sty);
+                        }else if(rad2deg(fAttitude[0]) > 135 && rad2deg(fAttitude[0])<= 180){
+                            //right
+                            stx = stx - 50;
+                            img.setTranslationX(stx);
+                        }*/
+                        counted = true;
+                        vecchangecount = 0;
+                        counter++;
+
+                        sty = sty + 20;
+                        //img.setTranslationY(sty);
+
+                        float theta;
+                        //drDistance = drDistance + step;
+
+                    }
+                    // カウント自の加速度の向きを保存
+                    vecx = dx >= 0;
+                    vecy = dy >= 0;
+                    vecz = dz >= 0;
+                    // 状態更新
+                    oldVectorSize = vectorSize;
+                    // 加速度の保存
+                    oldx = event.values[0];
+                    oldy = event.values[1];
+                    oldz = event.values[2];
+
+                    String str_acc = "加速度センサー値:"
+                            + "\nX軸:" + event.values[SensorManager.DATA_X]
+                            + "\nY軸:" + event.values[SensorManager.DATA_Y]
+                            + "\nZ軸:" + event.values[SensorManager.DATA_Z];
+
+                    String str_count = "歩数" + counter;
 /*
-        final SensorManager mgr = (SensorManager)getSystemService(SENSOR_SERVICE);
-
-        final Sensor acc = mgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mgr.registerListener(listener, acc, SensorManager.SENSOR_DELAY_NORMAL);
-
-        final Sensor ori = mgr.getDefaultSensor(Sensor.TYPE_ORIENTATION);
-        mgr.registerListener(listener, ori, SensorManager.SENSOR_DELAY_NORMAL);
-
-        final Sensor mag = mgr.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        mgr.registerListener(listener, mag, SensorManager.SENSOR_DELAY_NORMAL);
+            //DataMapインスタンス生成
+            PutDataMapRequest dataMapRequest = PutDataMapRequest.create("/datapath");
+            DataMap dataMap = dataMapRequest.getDataMap();
+            //データセット
+            dataMap.putInt("key",0);
+            //データ更新
+            PutDataRequest request = dataMapRequest.asPutDataRequest();
+            PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi.putDataItem(client, request);
+            pendingResult.setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
+                @Override
+                public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
+                    Log.d("TAG", "onResult:" + dataItemResult.getStatus());
+                }
+            });
 */
+                    if (counter == 0 && p_count == 0) {
+                        p_count++;
+                        Vibration("/right", "right");
+                        PendingResult<NodeApi.GetConnectedNodesResult> nodes = Wearable.NodeApi.getConnectedNodes(client);
+                        nodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
+                            @Override
+                            public void onResult(NodeApi.GetConnectedNodesResult result) {
+                                String messagePayload = "Hello!";
+                                for (Node node : result.getNodes()) {
+                                    final byte[] bs = (messagePayload + " " + node.getId()).getBytes();
+                                    PendingResult<MessageApi.SendMessageResult> messageResult =
+                                            Wearable.MessageApi.sendMessage(client, node.getId(), "/path", bs);
+                                    messageResult.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
+                                        @Override
+                                        public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                            Status status = sendMessageResult.getStatus();
+                                            Log.d("TAG", "Status: " + status.toString());
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            }
 
+            public void onAccuracyChanged (Sensor sensor, int accuracy) {}
+        };
         //センサー描画
         /*
         mChart = (LineChart) findViewById(R.id.lineChart);
@@ -275,39 +390,28 @@ public class Compass extends Activity implements SensorEventListener {
         gyrChart = (LineChart) findViewById(R.id.lineChart2);
         gyrChart.setDescription(""); // 表のタイトルを空にする
         gyrChart.setData(new LineData()); // 空のLineData型インスタンスを追加
-*/
-
-
-
-/*        Button btn = (Button)findViewById(R.id.vbtn);
-        btn.setOnClickListener(new View.OnClickListener(){
-            public  void onClick(View v){
-                x++;
-            }
-        });
-*/
-        // Register the local broadcast receiver
+        */
 
         IntentFilter messageFilter = new IntentFilter(Intent.ACTION_SEND);
         MessageReceiver messageReceiver = new MessageReceiver();
         LocalBroadcastManager.getInstance(this).registerReceiver(messageReceiver, messageFilter);
 
-        String data[][] = parse("Link.csv", this);
+        String data[][] = parse("Link_0123.csv", this);
         int adj[][] = new int[data.length][data[0].length];
         for (int i = 0; i < data.length; i++) {
             for (int j = 0; j < data[0].length; j++) {
-                //try {
+                try {
                 adj[i][j] = Integer.parseInt(data[i][j]);
-                //}catch (NullPointerException e){
+                }catch (NullPointerException e){
                 // textview08.setText("NullPointerException");
-                //}
+                }
             }
         }
-        int n = 7;    //頂点数
+        int n = 6;    //頂点数
         int s = 0;    //スタート頂点(頂点番号は -1 されている[元は 1])
         //int g = messageReceiver.onReceive(context,intent);
-        int g = 6;    //ゴール頂点(頂点番号は -1 されている[元は 5])
-        r = 1;    //現在地ノード（始めはスタート頂点）
+        int g = 5;    //ゴール頂点(頂点番号は -1 されている[元は 5])
+        //static int r = 0;    //現在地ノード（始めはスタート頂点）
         /*int[][] adj = new int[][]{
                 //接続元ノード, 接続先ノード, 重み
                 {0, 1, 7},
@@ -352,12 +456,11 @@ public class Compass extends Activity implements SensorEventListener {
 
         //選択したリンク
         int len = paths.size();
-        for (int i = 1; i < len; i++) {
 
+        for (int i = 1; i < len; i++) {
             str_len = "" + paths.get(i);
             String cost_len = "" + paths.get(i).cost;
             if (i == 1) {
-                //textview05.setText(str_len);
             } else if (i == 2) {
                 //textview06.setText(str_len);
             } else if (i == 3) {
@@ -377,14 +480,15 @@ public class Compass extends Activity implements SensorEventListener {
                     @Override
                     public void run() {
 
-                        rssiVal = 5;
+                        rssiVal = 6;
                         point = new ArrayList[rssiVal][3];
 
-                        CSV("Node01_1201.csv", 0);
-                        CSV("Node02_1201.csv", 1);
-                        CSV("Node03_1201.csv", 2);
-                        CSV("Node04_1201.csv", 3);
-                        CSV("Node05_1201.csv", 4);
+                        CSV("0303Node1.csv", 0);
+                        CSV("0303Node2.csv", 1);
+                        CSV("0303Node3.csv", 2);
+                        CSV("0303Node4.csv", 3);
+                        CSV("0303Node5.csv", 4);
+                        CSV("0303Node6.csv", 5);
 
                         double max1 = 0;
                         double max2 = 0;
@@ -396,6 +500,7 @@ public class Compass extends Activity implements SensorEventListener {
                         double rssi_current = 0; // 現在位置で取得したRSSIを格納する
                         double rssi_database = 0; // データベースのrssiを格納する
                         int countscsn[] = new int[rssiVal]; // 各測定点におけるDBとスキャン結果の一致APを数える
+
 
 
                         WifiManager manager = (WifiManager) getSystemService(WIFI_SERVICE);
@@ -414,7 +519,7 @@ public class Compass extends Activity implements SensorEventListener {
                             for (int j = 0; j < rssiVal; j++) { // 測定点番号ループ　(測定点1->測定点2->・・・)
                                 for (int k = 0; k < point[j][0].size(); k++) { // 測定点データループ
                                     for (int i = 0; i < results.size(); i++) { // APスキャン結果ループ
-                                        if (results.get(i).level > -70) {   //明らかに微弱な電波は除外するためにRSSIの下限を定める
+                                        if (results.get(i).level > -2147483648) {   //明らかに微弱な電波は除外するためにRSSIの下限を定める
                                             if (results.get(i).BSSID.equals(point[j][0].get(k))) { // APスキャン結果のBSSID＝測定点データのBSSIDならば　アルゴリズム計算
                                                 countscsn[j]++;
                                                 rssi_current = results.get(i).level;
@@ -439,6 +544,7 @@ public class Compass extends Activity implements SensorEventListener {
                             // 一致AP数が一番多い測定点にAP数を合わせるために
                             // 足りないAP数のぶんだけ
                             // 各測定点における取得RSSIとDB内RSSIの誤差の平均を加算していく
+                            /*
                             for (int o = 0; o < rssiVal; o++) {
                                 double difVal = max1 - countscsn[o];
                                 if (difVal != 0 && countscsn[o] > 5) { // 一致AP数が明らかに少ない測定点を省くためにcount[o] > ○　を入れているが不要？　else if以降も同様
@@ -450,6 +556,7 @@ public class Compass extends Activity implements SensorEventListener {
                                 //Log.d("ruijido"+ o+1, String.valueOf(e[o]));
 
                             }
+                            */
                             // ---------------------------------------
 
 
@@ -465,116 +572,59 @@ public class Compass extends Activity implements SensorEventListener {
                                 } else if (e[t] != 0) {
                                     w[t] = (1 / (e[t] * e[t])) / sigma2;
                                 }
-                                //Log.d("weight" + t, String.valueOf(w[t]));
                                 if (w[t] > max2) {
                                     max2 = w[t];
                                     fpno = t + 1;
-                                    //textview16.setText("(類似度)現在地は" + fpno);
                                 }
-/*
-                                    textview17.setText("測定点1 wk類似度:" + w[0] );
-                                    textview18.setText("測定点2 wk類似度:" + w[1] );
-                                    textview19.setText("測定点3 wk類似度:" + w[2] );
-                                    textview20.setText("測定点4 wk類似度:" + w[3] );
-                                    //textview21.setText("測定点5 wk類似度:" + w[4] );
 
-                                    //textview14.setText("測定点6 wk類似度:" + w[5] );
-                                    //textview15.setText("測定点7 wk類似度:" + w[6] );
-                                    */
                             }
 
 
-                            for (int i = 0; i <= 4; i++) {
+                            for (int i = 0; i <= 5; i++) {
                                 w_dis[i] = w[i] - w_2[i];
                             }
-                            for (int i = 0; i <= 4; i++) {
+                            for (int i = 0; i <= 5; i++) {
                                 w_dis2[i] = w[i] - w_3[i];
                             }
 
 
-                            if (r == 0 || r == 2 || r == 5) {
-                                if (k_1 == 0 && w_dis[1] >= 0 && w[1] > 0.31) {
-                                    new Thread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                                            for (Node node : nodes.getNodes()) {
-                                                MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                                        client,
-                                                        node.getId(),
-                                                        "/Hello world ",
-                                                        "Hello world".getBytes()
-                                                ).await();
-                                            }
-                                        }
-                                    }).start();
+//                            if (r == 0 || r == 2 || r == 3) {
+                            if (r == 0) {
+                                if (k_1 == 0 &&  w[1] > 0.3) {
+                                    Vibration("/right", "right");
                                     k_1++;
                                     r = 1;
                                 }
                             }
-
-                            if (r == 1 || r == 3) {
-                                if (k_2 == 0 && w_dis[2] >= 0 && w[2] > 0.42) {
-                                    new Thread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                                            for (Node node : nodes.getNodes()) {
-                                                MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                                        client,
-                                                        node.getId(),
-                                                        "/right",
-                                                        "right".getBytes()
-                                                ).await();
-                                            }
-                                        }
-                                    }).start();
+/*
+                            if (r == 1 || r == 4) {
+                                if (k_2 == 0 && w[2] > 0.45) {
+                                    Vibration("/right", "right");
                                     k_2++;
                                     r = 2;
                                 }
                             }
+*/
 
-
-                            if ((r == 2 || r == 4) && k_3 == 0 && w_dis[3] >= 0 && w[3] > 0.55) {
-
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                                        for (Node node : nodes.getNodes()) {
-                                            MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                                    client,
-                                                    node.getId(),
-                                                    "/Hello world",
-                                                    "Hello world".getBytes()
-                                            ).await();
-                                        }
-                                    }
-                                }).start();
+//                            if ((r == 1 || r == 4) && k_3 == 0 && w_dis[3] >= 0 && w[3] > 0.38) {
+                            if ((r == 1) && k_3 == 0 && w_dis[3] >= 0 && w[3] > 0.3) {
+                                Vibration("/left", "left");
                                 k_3++;
                                 r = 3;
                             }
 
-                            if ((r == 3 || r == 5) && k_4 == 0 && w_dis[4] >= 0 && w[4] > 0.6) {
-
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                                        for (Node node : nodes.getNodes()) {
-                                            MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                                    client,
-                                                    node.getId(),
-                                                    "/arrival",
-                                                    "arrival".getBytes()
-                                            ).await();
-                                        }
-                                    }
-                                }).start();
+//                            if ((r == 2 || r == 3 || r == 5) && k_4 == 0 && w_dis[4] >= 0 && w[4] > 0.40) {
+                            if ((r == 3) && k_4 == 0 && w_dis[4] >= 0 && w[4] > 0.3) {
+                                Vibration("/right", "right");
                                 k_4++;
                                 r = 4;
                             }
 
+                            if ((r == 4) && k_5 == 0 &&  w[4] > 0.3) {
+                                Vibration("/arrival","arrival");
+                                k_5++;
+                                r = 5;
+                            }
 
 
                             bw = new BufferedWriter(new OutputStreamWriter(
@@ -585,12 +635,13 @@ public class Compass extends Activity implements SensorEventListener {
                                     + "測定点3 類似度:" + "," + w[2] + "\n"
                                     + "測定点4 類似度:" + "," + w[3] + "\n"
                                     + "測定点5 類似度:" + "," + w[4] + "\n"
+                                    + "測定点6 類似度:" + "," + w[5] + "\n"
                                     + "w_2[0]" + "," + w_2[0] + "\n"
                                     + "w_2[1]" + "," + w_2[1] + "\n"
                                     + "w_2[2]" + "," + w_2[2] + "\n"
                                     + "w_2[3]" + "," + w_2[3] + "\n"
                                     + "w_2[4]" + "," + w_2[4] + "\n"
-                                    + "w_3[3]" + "," + w_3[3] + "\n"
+                                    + "w_2[5]" + "," + w_2[5] + "\n"
                                     + "w_dis[3]" + "," + w_dis[3] + "\n"
                                     + "w_dis2[3]" + "," + w_dis2[3] + "\n"
                                     + "最大類似度地点" + "," + fpno + "\n"
@@ -599,6 +650,14 @@ public class Compass extends Activity implements SensorEventListener {
                             //bw.write(w[2] + "\n");
                             bw.close();
 
+                            t2.setText("基準点1:" + String.valueOf(w[0]));
+                            t3.setText("基準点2:" + w[1]);
+                            t4.setText("基準点3:" + w[2]);
+                            t5.setText("基準点4:" + w[3]);
+                            t6.setText("基準点5:" + w[4]);
+                            t7.setText("基準点6:" + w[5]);
+
+
 
                             for (int i = 0; i <= 4; i++) {
                                 w_2[i] = w[i];
@@ -606,7 +665,6 @@ public class Compass extends Activity implements SensorEventListener {
                             for (int i = 0; i <= 4; i++) {
                                 w_3[i] = w_2[i];
                             }
-                            //textview21.setText("w_2[3]" + w_2[3] );
 
 
                         } catch (IndexOutOfBoundsException ee) {
@@ -620,12 +678,6 @@ public class Compass extends Activity implements SensorEventListener {
 
             }
         }, 0, INTERVAL_PERIOD);
-
-
-        //fingerPrint_Cos_Similarity();
-        //fingerPrint_Likelihood();
-        //fingerPrint_wKNN();
-
     }
 
     public class MessageReceiver extends BroadcastReceiver {
@@ -660,351 +712,53 @@ public class Compass extends Activity implements SensorEventListener {
 
         if (sensors_ACC.size() > 0) {
             Sensor s_acc = sensors_ACC.get(0);
-            sensorManager.registerListener(this, s_acc, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(sensorEventListener, s_acc, SensorManager.SENSOR_DELAY_UI);
             Log.d("TYPE_ACCELEROMETER", "Sucess" );
 
         }
         if (sensors_GYR.size() > 0) {
             Sensor s_gyr = sensors_GYR.get(0);
-            sensorManager.registerListener(this, s_gyr, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(sensorEventListener, s_gyr, SensorManager.SENSOR_DELAY_UI);
             Log.d("TYPE_GYROSCOPE", "Sucess" );
 
         }
         if (sensors_MAG.size() > 0) {
             Sensor s_mag = sensors_MAG.get(0);
-            sensorManager.registerListener(this, s_mag, SensorManager.SENSOR_DELAY_UI);
+            sensorManager.registerListener(sensorEventListener, s_mag, SensorManager.SENSOR_DELAY_UI);
             Log.d("TYPE_MAGNETIC_FIELD", "Sucess" + sensors_MAG );
 
         }
     }
-/*
+
     public void onPause(){
         super.onPause();
-        sensorManager.unregisterListener(this);
+        if(sensorManager != null) {
+            sensorManager.unregisterListener(sensorEventListener);
+        }
     }
-*/
+
     @Override
     protected void onStop() {
         // TODO Auto-generated method stub
         Log.d("onStop", "Sucess" );
         super.onStop();
         // Listenerの登録解除
-        sensorManager.unregisterListener(this);
+        sensorManager.unregisterListener(sensorEventListener);
     }
 
-
+/*
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // TODO Auto-generated method stub
+        //センサーの精度が変更されると呼ばれる
         Log.d("onAccuracyChanged", "Sucess" );
-
     }
-
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        float dx;
-        float dy;
-        float dz;
-        float oldx = 0f;
-        float oldy = 0f;
-        float oldz = 0f;
-        int x = 0;
-
-        switch (event.sensor.getType()) {
-            case Sensor.TYPE_ACCELEROMETER:
-                accelerometerValues = event.values.clone();
-                break;
-            case Sensor.TYPE_MAGNETIC_FIELD:
-                magneticValues = event.values.clone();
-                break;
-            case Sensor.TYPE_GYROSCOPE:
-                gyroscopeValues = event.values.clone();
-                break;
-        }
-        /*
-        if (magneticValues != null && accelerometerValues != null) {
-            float[] R = new float[16];
-            float[] I = new float[16];
-
-            SensorManager.getRotationMatrix(R, I, accelerometerValues,
-                    magneticValues);
-
-            float[] actual_orientation = new float[3];
-
-            SensorManager.getOrientation(R, actual_orientation);
-            // 求まった方位角をラジアンから度に変換する
-            float direction = (float) Math.toDegrees(actual_orientation[0]);
-            //arView.drawScreen(direction, drDistance, fpno, placeNo); //ARViewクラスに値の受け渡し(端末の向いている方向,累計進んだ距離,測定点の推定結果,トップ画面で選んだルート番号)
-        }*/
-
-        // fAccell と fMagnetic から傾きと方位角を計算する
-//        if( accelerometerValues != null && magneticValues != null ) {
-        if(event.sensor.getType() == Sensor.TYPE_ACCELEROMETER ) {
-            if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-                Log.d("getRotation", "Sucess");
-
-                // 回転行列を得る
-                float[] inR = new float[9];
-                SensorManager.getRotationMatrix(
-                        inR,
-                        null,
-                        accelerometerValues,
-                        magneticValues);
-                // ワールド座標とデバイス座標のマッピングを変換する
-                float[] outR = new float[9];
-                SensorManager.remapCoordinateSystem(
-                        inR,
-                        SensorManager.AXIS_X, SensorManager.AXIS_Y,
-                        outR);
-                // 姿勢を得る
-                float[] fAttitude = new float[3];
-                SensorManager.getOrientation(
-                        outR,
-                        fAttitude);
-
-                String buf =
-                        "---------- Orientation --------\n" +
-                                String.format("方位角\n\t%f\n", fAttitude[0] * (float) 180.0 / (float) Math.PI) +
-                                String.format("前後の傾斜\n\t%f\n", fAttitude[1] * (float) 180.0 / (float) Math.PI) +
-                                String.format("左右の傾斜\n\t%f\n", fAttitude[2] * (float) 180.0 / (float) Math.PI);
-                TextView t = (TextView) findViewById(R.id.textView1);
-                t.setText(buf);
-
-                TextView t2 = (TextView) findViewById(R.id.textView2);
-                t2.setText("" + fAttitude[0]);
-                TextView t3 = (TextView) findViewById(R.id.textView3);
-                t3.setText("" + fAttitude[1]);
-                TextView t4 = (TextView) findViewById(R.id.textView4);
-                t4.setText("" + fAttitude[2]);
-            }
-        }
-
-        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-            Log.d("mag", "Sucess");
-
-            // 増加量
-
-            dx = event.values[0] - oldx;
-            dy = event.values[1] - oldy;
-            dz = event.values[2] - oldz;
-            // ベクトル量をピタゴラスの定義から求める。
-            // が正確な値は必要でなく、消費電力       から平方根まで求める必要はない
-            // vectorSize = Math.sqrt((double)(dx*dx+dy*dy+dz*dz));
-            vectorSize = dx * dx + dy * dy + dz * dz;
-            // ベクトル計算を厳密に行うと計算量が上がるため、簡易的な方向を求める。
-            // 一定量のベクトル量があり向きの反転があった場合（多分走った場合）
-            // vecchangecountはSENSOR_DELAY_NORMALの場合、200ms精度より
-            // 加速度変化が検出できないための専用処理。精度を上げると不要
-            // さらに精度がわるいことから、連続のベクトル変化は検知しない。
-            long dt = new Date().getTime() - changeTime;
-            boolean dxx = Math.abs(dx) > thresholdMin && vecx != (dx >= 0);
-            boolean dxy = Math.abs(dy) > thresholdMin && vecy != (dy >= 0);
-            boolean dxz = Math.abs(dz) > thresholdMin && vecz != (dz >= 0);
-            if (vectorSize > threshold && dt > thresholdTime
-                    && (dxx || dxy || dxz)) {
-                vecchangecount++;
-                changeTime = new Date().getTime();
-
-            }
-            // ベクトル量がある状態で向きが２回（上下運動とみなす）変わった場合
-            // または、ベクトル量が一定値を下回った（静止とみなす）場合、カウント許可
-            if (vecchangecount > 1 || vectorSize < 1) {
-                counted = false;
-                vecchangecount = 0;
-            }
-            // カウント許可で、閾値を超えるベクトル量がある場合、カウント
-            if (!counted && vectorSize > threshold) {
-
-                counted = true;
-                vecchangecount = 0;
-                counter++;
-                sty = sty + 50;
-                img.setTranslationY(sty);
-                float theta;
-                drDistance = drDistance + step;
-
-				/*
-                 * if(pretheta >= 0 && pretheta < 90){ theta = pretheta;
-				 * drDistance = (float)(drDistance + (step * Math.cos(theta)));
-				 * } if(pretheta >= 90 && pretheta < 180){ theta = 180 -
-				 * pretheta; drDistance = (float)(drDistance - (step *
-				 * Math.cos(theta))); } if(pretheta >= 180 && pretheta < 270){
-				 * theta = pretheta - 180; drDistance = (float)(drDistance -
-				 * (step * Math.cos(theta))); } if(pretheta >= 270 && pretheta
-				 * <= 360){ theta = 360 - pretheta; drDistance =
-				 * (float)(drDistance + (step * Math.cos(theta))); }
-				 */
-
-            }
-            // カウント自の加速度の向きを保存
-            vecx = dx >= 0;
-            vecy = dy >= 0;
-            vecz = dz >= 0;
-            // 状態更新
-            oldVectorSize = vectorSize;
-            // 加速度の保存
-            oldx = event.values[0];
-            oldy = event.values[1];
-            oldz = event.values[2];
-
-            String str_acc = "加速度センサー値:"
-                    + "\nX軸:" + event.values[SensorManager.DATA_X]
-                    + "\nY軸:" + event.values[SensorManager.DATA_Y]
-                    + "\nZ軸:" + event.values[SensorManager.DATA_Z];
-
-            String str_count = "歩数" + counter;
-
-            //textview02.setText(str_acc);
-            //textview03.setText(str_count);
-/*
-            //DataMapインスタンス生成
-            PutDataMapRequest dataMapRequest = PutDataMapRequest.create("/datapath");
-            DataMap dataMap = dataMapRequest.getDataMap();
-            //データセット
-            dataMap.putInt("key",0);
-            //データ更新
-            PutDataRequest request = dataMapRequest.asPutDataRequest();
-            PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi.putDataItem(client, request);
-            pendingResult.setResultCallback(new ResultCallback<DataApi.DataItemResult>() {
-                @Override
-                public void onResult(@NonNull DataApi.DataItemResult dataItemResult) {
-                    Log.d("TAG", "onResult:" + dataItemResult.getStatus());
-                }
-            });
 */
-            if (counter == 0 && p_count == 0) {
-                p_count++;
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                        for (Node node : nodes.getNodes()) {
-                            MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                    client,
-                                    node.getId(),
-                                    "/right",
-                                    "right".getBytes()
-                            ).await();
-                        }
-                    }
-                }).start();
-                PendingResult<NodeApi.GetConnectedNodesResult> nodes = Wearable.NodeApi.getConnectedNodes(client);
-                nodes.setResultCallback(new ResultCallback<NodeApi.GetConnectedNodesResult>() {
-                    @Override
-                    public void onResult(NodeApi.GetConnectedNodesResult result) {
-                        String messagePayload = "Hello!";
-                        for (Node node : result.getNodes()) {
-                            final byte[] bs = (messagePayload + " " + node.getId()).getBytes();
-                            PendingResult<MessageApi.SendMessageResult> messageResult =
-                                    Wearable.MessageApi.sendMessage(client, node.getId(), "/path", bs);
-                            messageResult.setResultCallback(new ResultCallback<MessageApi.SendMessageResult>() {
-                                @Override
-                                public void onResult(MessageApi.SendMessageResult sendMessageResult) {
-                                    Status status = sendMessageResult.getStatus();
-                                    Log.d("TAG", "Status: " + status.toString());
-                                }
-                            });
-                        }
-                    }
-                });
 
-            } else if (counter == 16 && p_count == 1) {
-                p_count++;
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                        for (Node node : nodes.getNodes()) {
-                            MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                    client,
-                                    node.getId(),
-                                    "/left",
-                                    "left".getBytes()
-                            ).await();
-                        }
-                    }
-                }).start();
-            } else if (counter == 24 && p_count == 1) {
-                p_count++;
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
-                        for (Node node : nodes.getNodes()) {
-                            MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
-                                    client,
-                                    node.getId(),
-                                    "/right",
-                                    "right".getBytes()
-                            ).await();
-                        }
-                    }
-                }).start();
-                counter = 0;
-            }
-            /*
-        LineData data = mChart.getLineData();
+    private float rad2deg( float rad ) {
+        return rad * (float) 180.0 / (float) Math.PI;
+        //return rad *  (float) Math.toDegrees(rad);
 
-        if (data != null) {
-            for (int i = 0; i < 3; i++) { // 3軸なのでそれぞれ処理します
-                ILineDataSet set = data.getDataSetByIndex(i);
-                if (set == null) {
-                    set = createSet(names[i], colors[i]); // ILineDataSetの初期化は別メソッドにまとめました
-                    data.addDataSet(set);
-                }
-
-                data.addEntry(new Entry(set.getEntryCount(), event.values[i]), i); // 実際にデータを追加する
-                data.notifyDataChanged();
-            }
-
-            mChart.notifyDataSetChanged(); // 表示の更新のために変更を通知する
-            mChart.setVisibleXRangeMaximum(50); // 表示の幅を決定する
-
-            if (x == 0) {
-                mChart.moveViewToX(data.getEntryCount()); // 最新のデータまで表示を移動させる
-            }
-        }*/
-        }
-        /*
-          <com.github.mikephil.charting.charts.LineChart
-        android:layout_width="match_parent"
-        android:layout_height="131dp"
-        android:id="@+id/lineChart"/>
-
-         */
-        /*if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            String str_gyr = "ジャイロセンサー値:"
-                    + "\nX軸:" + event.values[SensorManager.DATA_X]
-                    + "\nY軸:" + event.values[SensorManager.DATA_Y]
-                    + "\nZ軸:" + event.values[SensorManager.DATA_Z];
-            textview04.setText(str_gyr);
-            LineData data_gyr = gyrChart.getLineData();
-
-            if (data_gyr != null) {
-                for (int i = 0; i < 3; i++) { // 3軸なのでそれぞれ処理します
-                    ILineDataSet set = data_gyr.getDataSetByIndex(i);
-                    if (set == null) {
-                        set = createSet(names[i], colors[i]); // ILineDataSetの初期化は別メソッドにまとめました
-                        data_gyr.addDataSet(set);
-                    }
-
-                    data_gyr.addEntry(new Entry(set.getEntryCount(), event.values[i]), i); // 実際にデータを追加する
-                    data_gyr.notifyDataChanged();
-                }
-
-                gyrChart.notifyDataSetChanged(); // 表示の更新のために変更を通知する
-                gyrChart.setVisibleXRangeMaximum(50); // 表示の幅を決定する
-
-                if(x == 0){
-                    gyrChart.moveViewToX(data_gyr.getEntryCount()); // 最新のデータまで表示を移動させる
-                }
-
-
-
-            }
-
-        }*/
     }
 
     private LineDataSet createSet(String label, int color) {
@@ -1091,6 +845,23 @@ public class Compass extends Activity implements SensorEventListener {
             // BufferedReaderオブジェクトのクローズ時の例外捕捉
             e.printStackTrace();
         }
+    }
+
+    public void Vibration(final String s_arrival, final String ss_arrival){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(client).await();
+                for (Node node : nodes.getNodes()) {
+                    MessageApi.SendMessageResult r = Wearable.MessageApi.sendMessage(
+                            client,
+                            node.getId(),
+                            s_arrival,
+                            ss_arrival.getBytes()
+                    ).await();
+                }
+            }
+        }).start();
     }
 
     /*----   コサイン類似度   ----*/

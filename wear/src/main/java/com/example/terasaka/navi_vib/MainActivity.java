@@ -75,7 +75,6 @@ public class MainActivity extends Activity {
 
 
             final Intent i = new Intent(this, Navigation.class);
-            final Intent j = new Intent(this, MainActivity.class);
             final Button button = (Button) findViewById(R.id.button);
 
             ListView listView = (ListView)findViewById(R.id.listview);
@@ -213,7 +212,7 @@ public class MainActivity extends Activity {
         }
     // ListView に表示させる文字列
     private static final String[] SIZES = new String[] {
-            "測定点1", "測定点2", "測定点3","328教員室前","測定点5"
+            "327教員室前", "328教員室前", "329教員室前","328教員室前","測定点"
     };
 }
 

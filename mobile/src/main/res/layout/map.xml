@@ -22,7 +22,7 @@
             android:id="@+id/floormap03"
             android:layout_centerVertical="true"
             android:layout_centerHorizontal="true"
-            android:src="@drawable/floormap05"
+            android:src="@drawable/floormap"
             android:scaleType="fitCenter"
             />
 
@@ -32,13 +32,6 @@
             android:id="@+id/linearLayout2"
             android:layout_height="fill_parent"
             android:orientation="vertical">
-
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:id="@+id/googlemap2"
-            android:src="@drawable/googlemap2"
-            />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -52,17 +45,15 @@
                 android:text="New Text"
                 android:id="@+id/textView2" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="New Text"
-                android:id="@+id/textView3" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="New Text"
-                android:id="@+id/textView4" />
+            <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/googlemap2"
+            android:src="@drawable/googlemap2"
+            />
+
+
 
 
         </LinearLayout>

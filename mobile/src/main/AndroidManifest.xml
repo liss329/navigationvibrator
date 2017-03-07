@@ -48,14 +48,12 @@
             android:name = ".SensorManaged">
         </activity>
         <activity
-            android:name = ".Compass"
-            android:screenOrientation="landscape" >
+            android:name = ".Compass">
 
         </activity>
 
         <activity
-            android:name = ".MapNavigation"
-            android:screenOrientation="landscape" >
+            android:name = ".MapNavigation">
         </activity>
 
         <service android:name = ".MyService">               

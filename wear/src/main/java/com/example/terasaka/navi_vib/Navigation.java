@@ -43,6 +43,8 @@ public class Navigation extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_circled_image_view2);
 
+
+
         Log.v(TAG, "onCreate()");
         this.vib = (Vibrator) this.getSystemService(VIBRATOR_SERVICE);
 

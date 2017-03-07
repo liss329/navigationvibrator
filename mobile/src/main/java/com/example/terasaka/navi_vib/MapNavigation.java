@@ -153,13 +153,14 @@ public class MapNavigation extends Activity {
                                     String.format( "左右の傾斜\n\t%f\n", rad2deg( fAttitude[2] ));
                     TextView t = (TextView) findViewById( R.id.textView1 );
                     t.setText( buf );
-
+/*
                     TextView t2 = (TextView) findViewById( R.id.textView2 );
                     t2.setText( "" + fAttitude[0] );
                     TextView t3 = (TextView) findViewById( R.id.textView3 );
                     t3.setText( "" + fAttitude[1]);
                     TextView t4 = (TextView) findViewById( R.id.textView4 );
                     t4.setText( "" + fAttitude[2]);
+                    */
                 }
             }
             public void onAccuracyChanged (Sensor sensor, int accuracy) {}

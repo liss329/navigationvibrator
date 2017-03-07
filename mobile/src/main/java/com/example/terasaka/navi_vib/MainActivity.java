@@ -59,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         final Intent i = new Intent(this, Compass.class);
-        final Intent i2 = new Intent(this, SensorManaged.class);
-        final Intent i3 = new Intent(this, MapNavigation.class);
+        final Intent i2 = new Intent(this, SubActivity.class);
+        final Intent i3 = new Intent(this, SensorManaged.class);
 
 
       /*  FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);

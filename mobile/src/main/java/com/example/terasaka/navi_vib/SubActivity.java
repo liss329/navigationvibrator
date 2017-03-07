@@ -34,7 +34,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 
-public class SubActivity extends Activity {
+public class  SubActivity extends Activity {
 
     static SQLiteDatabase mydb;
     private Button buttonSave, buttonRead;
